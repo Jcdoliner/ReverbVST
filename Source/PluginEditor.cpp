@@ -38,9 +38,9 @@ ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProc
     tailTxt->Label::setText("Tail", dontSendNotification);
     tailTxt->Label::attachToComponent(tailState, false);
 
-    //lengthAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "length", *lengthSlider);
-    //sizeAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "size", *sizeSlider);
-    //tailAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "tail", *tailSlider);
+    lengthAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "length", *lengthState);
+    sizeAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "size", *sizeState);
+    tailAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "tail", *tailState);
 
         //addAndMakeVisible(lengthState = new Slider(""));
         //lengthState->Slider::setSliderStyle(Slider::LinearBarVertical);
