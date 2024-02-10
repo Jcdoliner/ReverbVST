@@ -7,9 +7,9 @@
 */
 
 #pragma once
-
+#define sliderN 3
+#define msDelayResponse 40
 #include <JuceHeader.h>
-
 //==============================================================================
 /**
 */
@@ -32,8 +32,8 @@ public:
    #endif
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-
-    //==============================================================================
+    void circularBuffer(int channel,int n,int delayBufferSize,float *channelData);
+        //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
@@ -57,6 +57,42 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+//    double samplerate;
+//    long delaySize;
+//    long delayCounter=1;
+//    int buffersToProcess;
+    //std::vector <float> delayBuffer;
+    double sizeOfDelayBuffer;
+    juce::AudioBuffer<float> delayBuffer;
+    int writePosition {0};
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState> state;
+    const char* paramNames[sliderN] = { "Length","Size","Tail" };
+    const char* statenames[sliderN] = { "length","size","tail" };
+
+//    using Delay= juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>;
+//
+//
+//    struct FeedBackLoop{
+//        float delayMs=80;
+//        float decayGain=0.85;
+//        int delaySamples;
+//        Delay delay;
+//
+//
+//        void configure (double sampleRate){
+//            delaySamples=delayMs*0.001*sampleRate;
+//            delay.setMaximumDelayInSamples(delaySamples);
+//            delay.reset();
+//        }
+//        float process (float inputSample){
+//            float delayed=delay.getDelay();
+//            float out=inputSample+delayed*decayGain;
+//            return delayed;
+//
+
+        //}
+    //};
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReverbSEGAudioProcessor)
 };

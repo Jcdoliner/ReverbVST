@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "math.h"
 
 //==============================================================================
 ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
@@ -22,6 +23,17 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
                        )
 #endif
 {
+    state = new juce::AudioProcessorValueTreeState(*this, nullptr);
+    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.5f, 3.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 150.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(0.01f, 1.f, 0.01f), 0.f, nullptr, nullptr);
+
+
+
+    state->state = juce::ValueTree(statenames[0]);
+    state->state = juce::ValueTree(statenames[1]);
+    state->state = juce::ValueTree(statenames[2]);
+
 }
 
 ReverbSEGAudioProcessor::~ReverbSEGAudioProcessor()
@@ -93,8 +105,10 @@ void ReverbSEGAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+//    samplerate = sampleRate;
+
+    sizeOfDelayBuffer=sampleRate*2.0;
+    delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);
 }
 
 void ReverbSEGAudioProcessor::releaseResources()
@@ -129,24 +143,52 @@ bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
+void ReverbSEGAudioProcessor::circularBuffer(int channel,int n,int delayBufferSize,float *channelData){
+    //Circular Buffer Found From JUCE 15 Audio Programmer Tutorial
+    if (delayBufferSize > n + writePosition){
+        delayBuffer.copyFromWithRamp(channel, writePosition,channelData,n,1.0f,0.01f);
+    }
+    else
+    {
+        auto samplesToFillBuffer=delayBufferSize-writePosition;
+        delayBuffer.copyFromWithRamp(channel,writePosition,channelData,samplesToFillBuffer,1.0f,0.01f);
+        auto samplesRemaining=n-samplesToFillBuffer;
+        delayBuffer.copyFromWithRamp(channel,0,channelData+samplesToFillBuffer,samplesRemaining,1.0f,0.01f);
+    }
+}
+
+
 void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    float maxVal;
 
-
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
-
-   
-    // interleaved by keeping the same state.
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
+        buffer.clear(i, 0, buffer.getNumSamples());
+         maxVal=buffer.getMagnitude(i,0,buffer.getNumSamples());
+    }
+    auto n=buffer.getNumSamples();
+    float length = *state->getRawParameterValue(statenames[0]);
+    float size = *state->getRawParameterValue(statenames[1]);
+    float tail = *state->getRawParameterValue(statenames[2]);
+    int delayBufferSize=delayBuffer.getNumSamples();
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        float* channelData = buffer.getWritePointer (channel);
+        circularBuffer(channel,n,delayBufferSize,channelData);
 
-        // ..do something to the data...
+            //        float cleansig=*channelData;
+//        FeedBackLoop.process()
+
+        //delayBuffer[delayCounter]=channelData;
+        //*channelData+=cleansig+(tail*(&delayBuffer[(delayCounter-1)]));
+        //std::cout<<"\nNewSample\n"<<delayBuffer[delayCounter-1]<<"\n"<<cleansig;
+        channelData++;
     }
+    writePosition+=n;
+    writePosition%=delayBufferSize;
 }
 
 //==============================================================================
@@ -163,15 +205,17 @@ juce::AudioProcessorEditor* ReverbSEGAudioProcessor::createEditor()
 //==============================================================================
 void ReverbSEGAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+
 }
 
 void ReverbSEGAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    juce::ValueTree tree = juce::ValueTree::readFromData(data,sizeInBytes);
+    if (tree.isValid()) {
+        state->state = tree;
+
+    }
+
 }
 
 //==============================================================================
