@@ -32,9 +32,8 @@ public:
    #endif
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-    void circularBuffer(int channel,int n,int delayBufferSize,float *channelData);
-
-    void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain);
+    void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int n,int delayBufferSize,float *channelData);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int n,int delayBufferSize,float tail,float gain);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -60,16 +59,25 @@ public:
 
 private:
       double samplerate;
-//    long delaySize;
-//    long delayCounter=1;
-//    int buffersToProcess;
-    //std::vector <float> delayBuffer;
+
     double sizeOfDelayBuffer;
-    juce::AudioBuffer<float> delayBuffer;
+
+    using virtualBuffer=juce::AudioBuffer<float>;
+
+    virtualBuffer delayBuffer;
+
+
+
+
+
     int writePosition {0};
     juce::ScopedPointer<juce::AudioProcessorValueTreeState> state;
     const char* paramNames[sliderN] = { "Length","Size","Tail" };
     const char* statenames[sliderN] = { "length","size","tail" };
+
+
+
+
 
 //    using Delay= juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>;
 //

@@ -143,34 +143,34 @@ bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
-void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain){
+void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int n,int delayBufferSize,float tail,float gain){
     auto readPosition=writePosition-(samplerate/(int)tail);
     if (readPosition<0)
         readPosition+=delayBufferSize;
     if (readPosition+n<delayBufferSize)
-        buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, (int) readPosition), n, gain, gain);
+        buffer.addFromWithRamp(channel, 0, dBuffer.getReadPointer(channel, (int) readPosition), n, gain, gain);
     else
     {
     auto samplesToFill=delayBufferSize-readPosition;
-    buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, (int) readPosition), (int)samplesToFill, gain, gain);
+    buffer.addFromWithRamp(channel, 0, dBuffer.getReadPointer(channel, (int) readPosition), (int)samplesToFill, gain, gain);
     auto bufferRemaining=n-samplesToFill;
-    buffer.addFromWithRamp(channel, (int)samplesToFill, delayBuffer.getReadPointer(channel, 0), (int)bufferRemaining, gain, gain);
+    buffer.addFromWithRamp(channel, (int)samplesToFill, dBuffer.getReadPointer(channel, 0), (int)bufferRemaining, gain, gain);
 
     }
 
 }
 
-void ReverbSEGAudioProcessor::circularBuffer(int channel,int n,int delayBufferSize,float *channelData){
+void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int n,int delayBufferSize,float *channelData){
     //Circular Buffer Found From JUCE 15 Audio Programmer Tutorial
     if (delayBufferSize > n + writePosition){
-        delayBuffer.copyFromWithRamp(channel, writePosition,channelData,n,1.0f,1.0f);
+        dbuffer.copyFromWithRamp(channel, writePosition,channelData,n,1.0f,1.0f);
     }
     else
     {
         auto samplesToFillBuffer=delayBufferSize-writePosition;
-        delayBuffer.copyFromWithRamp(channel,writePosition,channelData,samplesToFillBuffer,1.0f,1.0f);
+        dbuffer.copyFromWithRamp(channel,writePosition,channelData,samplesToFillBuffer,1.0f,1.0f);
         auto samplesRemaining=n-samplesToFillBuffer;
-        delayBuffer.copyFromWithRamp(channel,0,channelData+samplesToFillBuffer,samplesRemaining,1.0f,1.0f);
+        dbuffer.copyFromWithRamp(channel,0,channelData+samplesToFillBuffer,samplesRemaining,1.0f,1.0f);
     }
 }
 
@@ -186,37 +186,21 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         buffer.clear(i, 0, buffer.getNumSamples());
          maxVal=buffer.getMagnitude(i,0,buffer.getNumSamples());
     }
-    auto n=buffer.getNumSamples();
+
     float length = *state->getRawParameterValue(statenames[0]);
     float size = *state->getRawParameterValue(statenames[1]);
     float tail = *state->getRawParameterValue(statenames[2]);
 
+
+    auto n=buffer.getNumSamples();
     int delayBufferSize=delayBuffer.getNumSamples();
-
-
-
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         float* channelData = buffer.getWritePointer (channel);
-        circularBuffer(channel,n,delayBufferSize,channelData);
-        writeDelayToOutputBuffer(buffer,channel,n,delayBufferSize,tail,length);
-//        auto readPosition=writePosition-(samplerate/(int)tail);
-//        if (readPosition<0)
-//            readPosition+=delayBufferSize;
-//        if (readPosition+n<delayBufferSize) {
-//            buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, (int) readPosition), n, 0.6f, 0.6f);
-//        }
-//        else
-//        {
-//            auto samplesToFill=delayBufferSize-readPosition;
-//            buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, (int) readPosition), (int)samplesToFill, 0.6f, 0.6f);
-//            auto bufferRemaining=n-samplesToFill;
-//            buffer.addFromWithRamp(channel, (int)samplesToFill, delayBuffer.getReadPointer(channel, 0), (int)bufferRemaining, 0.6f, 0.6f);
-//
-//        }
+        circularBuffer(delayBuffer,channel,n,delayBufferSize,channelData);
+        writeDelayToOutputBuffer(buffer,delayBuffer,channel,n,delayBufferSize,tail,length);
 
-        //channelData++;
     }
     writePosition+=n;
     writePosition%=delayBufferSize;
