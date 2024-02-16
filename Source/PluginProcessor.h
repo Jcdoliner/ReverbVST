@@ -9,7 +9,9 @@
 #pragma once
 #define sliderN 3
 #define msDelayResponse 40
+#define reverbChannels 4
 #include <JuceHeader.h>
+
 //==============================================================================
 /**
 */
@@ -32,8 +34,12 @@ public:
    #endif
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-    void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int n,int delayBufferSize,float *channelData);
-    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int n,int delayBufferSize,float tail,float gain);
+    void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float tail,float gain);
+
+    void addDelayToBuffer(juce::AudioBuffer<float>& source,juce::AudioBuffer<float>& dest,int channel);
+
+
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
