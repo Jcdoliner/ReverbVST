@@ -24,8 +24,8 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 #endif
 {
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
-    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.0f, 0.9f, 0.01f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 150.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 1.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 8.f, 1.f), 0.f, nullptr, nullptr);
     state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 0.f, nullptr, nullptr);
 
 
@@ -106,9 +106,32 @@ void ReverbSEGAudioProcessor::changeProgramName (int index, const juce::String& 
 void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     samplerate = sampleRate;
-
-    sizeOfDelayBuffer=sampleRate*5.0;
+    reductionRatio=calcInvSqRoot(reverbChannels);
+    sizeOfDelayBuffer=sampleRate*2.0;
     delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);
+    for (int i=0 ;i<8;i++){
+        for (int j=0 ;j<8;j++)
+            if (i<4 || j<4) {
+                if (j==i || j==i+4||j==i-4 )
+                    hadamard[i][j] = -1;
+                else
+                    hadamard[i][j]= 1;
+            }
+            else {
+                if (j == i || j == i + 4)
+                    hadamard[i][j] = 1;
+                else
+                    hadamard[i][j] = -1;
+            }
+
+
+    }
+    std::cout<<(hadamard);
+
+
+
+
+
 }
 
 void ReverbSEGAudioProcessor::releaseResources()
@@ -156,8 +179,9 @@ void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,i
     }
 }
 
-void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float tail,float gain){
-    auto readPosition=writePosition-(samplerate/(int)tail);
+void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float delayBufferMag,int tail,float gain){
+    auto readPosition=writePosition-tail;
+
     if (readPosition<0)
         readPosition+=delayBufferSize;
     if (readPosition+bufferSize<delayBufferSize)
@@ -172,8 +196,53 @@ void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>&
     }
 
 }
+float ReverbSEGAudioProcessor::calcInvSqRoot( float n ) {
+//alg from= https://www.tutorialspoint.com/fast-inverse-square-root-in-cplusplus
+    const float threehalfs = 1.5f;
+    float y = n;
+
+    long i = * ( long * ) &y;
+
+    i = 0x5f3759df - ( i >> 1 );
+    y = * ( float * ) &i;
+
+    y = y * ( threehalfs - ( (n * 0.5F) * y * y ) );
+
+    return y;
+}
 
 
+void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[])
+{
+
+    if (std::floor(delayBufferMag)>0){
+        float relativeMagnitudes[reverbChannels]={0,0,0,0,0,0,0,0};
+        for (int i=0;i< reverbChannels;i++) {
+            auto readPosition=writePosition-delayTimes[i];
+            if (readPosition<0)
+                readPosition+=delayBufferSize;
+            if (readPosition+bufferSize<delayBufferSize)
+                relativeMagnitudes[i] =
+                        (dBuffer.getMagnitude(readPosition, bufferSize)) / delayBufferMag;
+
+            else {
+                auto samplesToFill = delayBufferSize - readPosition;
+                float a = (dBuffer.getMagnitude(readPosition, samplesToFill)) / delayBufferMag;
+                auto bufferRemaining=bufferSize-samplesToFill;
+                float b = (dBuffer.getMagnitude(0, bufferRemaining)) / delayBufferMag;
+                if (a>=b)
+                    relativeMagnitudes[i] =a/delayBufferMag;
+                else
+                    relativeMagnitudes[i] =b/delayBufferMag;
+            }
+            for (int j=0;j< reverbChannels;j++){
+                hadamardProduct[j]+=relativeMagnitudes[i]*(float)hadamard[j][i];
+
+            }
+        }
+    }
+
+}
 
 
 void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -188,29 +257,42 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
          maxVal=buffer.getMagnitude(i,0,buffer.getNumSamples());
     }
 
-    float length = *state->getRawParameterValue(statenames[0]);
+    float gain = *state->getRawParameterValue(statenames[0]);
     float size = *state->getRawParameterValue(statenames[1]);
     float tail = *state->getRawParameterValue(statenames[2]);
+    int delayTimes[reverbChannels];
+    for (int i=1;i<=reverbChannels;i++) {
+        delayTimes[i-1]=(int)(((samplerate)/(tail*((float)i*2))));
 
-
-    auto bufferSize=buffer.getNumSamples();
+    }
+        auto bufferSize=buffer.getNumSamples();
     int delayBufferSize=delayBuffer.getNumSamples();
+
+    buffer.applyGain(gain);
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
+
         float* channelData = buffer.getWritePointer (channel);
         circularBuffer(delayBuffer,channel,bufferSize,delayBufferSize,channelData);
+        float delayBufferMag=delayBuffer.getMagnitude(0,delayBufferSize);
+        //updates hadamarard array with new mixin values
+        generateMixMatrix(delayBuffer,bufferSize,delayBufferSize,delayBufferMag,delayTimes);
 
+        for (int i=0;i<(int)reverbChannels;i++){
+            writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,delayTimes[i],gain*hadamardProduct[i]*reductionRatio);
 
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*2.f,length*0.01f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*2.5f,length*0.025f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*2.9f,length*0.05f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*3.f,length*0.1f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*4.f,length*0.2f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*6.f,length*0.3f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*8.f,length*0.4f);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,tail*16.f,length*0.5f);
+        }
 
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*2.f,length*0.01f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*2.5f,length*0.025f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*2.9f,length*0.05f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*3.f,length*0.1f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*4.f,length*0.2f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*6.f,length*0.3f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*8.f,length*0.4f);
+//        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,tail*16.f,length*0.5f);
+//
 
 
 

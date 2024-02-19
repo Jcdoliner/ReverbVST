@@ -9,7 +9,7 @@
 #pragma once
 #define sliderN 3
 #define msDelayResponse 40
-#define reverbChannels 4
+#define reverbChannels 8
 #include <JuceHeader.h>
 
 //==============================================================================
@@ -35,11 +35,13 @@ public:
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData);
-    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float tail,float gain);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float delayBufferMag,int tail,float gain);
+    void generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[]);
 
-    void addDelayToBuffer(juce::AudioBuffer<float>& source,juce::AudioBuffer<float>& dest,int channel);
 
+    //void addDelayToBuffer(juce::AudioBuffer<float>& source,juce::AudioBuffer<float>& dest,int channel);
 
+    //float[] CreateHadamardMatrix(int numReverbChannels);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -62,6 +64,7 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    float calcInvSqRoot(float n);
 
 private:
       double samplerate;
@@ -75,39 +78,17 @@ private:
 
 
 
+    float hadamardProduct[reverbChannels]={1,1,1,1,1,1,1,1};
+
 
     int writePosition {0};
     juce::ScopedPointer<juce::AudioProcessorValueTreeState> state;
     const char* paramNames[sliderN] = { "Length","Size","Tail" };
     const char* statenames[sliderN] = { "length","size","tail" };
 
+    float reductionRatio;
+    int hadamard [reverbChannels][reverbChannels];
 
-
-
-
-//    using Delay= juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>;
-//
-//
-//    struct FeedBackLoop{
-//        float delayMs=80;
-//        float decayGain=0.85;
-//        int delaySamples;
-//        Delay delay;
-//
-//
-//        void configure (double sampleRate){
-//            delaySamples=delayMs*0.001*sampleRate;
-//            delay.setMaximumDelayInSamples(delaySamples);
-//            delay.reset();
-//        }
-//        float process (float inputSample){
-//            float delayed=delay.getDelay();
-//            float out=inputSample+delayed*decayGain;
-//            return delayed;
-//
-
-        //}
-    //};
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReverbSEGAudioProcessor)
