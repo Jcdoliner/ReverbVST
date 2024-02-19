@@ -26,7 +26,7 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
     state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 0.9f, 0.01f), 0.f, nullptr, nullptr);
     state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 8.f, 1.f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 1.f, nullptr, nullptr);
 
 
 
@@ -214,8 +214,21 @@ float ReverbSEGAudioProcessor::calcInvSqRoot( float n ) {
 void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[])
 {
 
-    if (delayBufferMag>0.2){
-        float relativeMagnitudes[reverbChannels]={0,0,0,0,0,0,0,0};
+    if (delayBufferMag>0.02){       //avoid divide by zero error
+        float relativeMagnitudes[reverbChannels]={0,0,0,0,0,0,0,0};// reset relative magnitudes
+        /*
+        going column-wise we read the max value found within our delay-time. (tapMagnitude)
+        from this we determine its relative size to the max in the entire buffer. (tapMagnitude/delayBufferMag)
+        this relation is then used as an input of a hadamard product, in summary what we aim to do is the following:
+        take these magnitudes as inputs by assigning them a respective column withing the hadamard matrix so example,
+        if we have 4 columns and 4 delayed samples a,b,c,d we would then have a matrix:
+
+         [1, 1, 1, 1]     [a]       a= a+b+c+d
+         [1,-1 ,1,-1]  *  [b]  =    b= a-b+c-d
+         [1, 1,-1,-1]     [c]       c= a+b-c-d
+         [1,-1,-1, 1]     [d]       d= a-b-c+d
+
+        */
         for (int i=0;i< reverbChannels;i++) {
             auto readPosition=writePosition-delayTimes[i];
             if (readPosition<0)
@@ -241,7 +254,9 @@ void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffe
 
 
         }
-        for (int i=0;i< reverbChannels;i++) {
+        // we search through the array and store maximum value
+        // we do this to normalize the value we pass to the gain of our delay lines
+        for (int i=0;i<reverbChannels;i++) {
             if (hadamardProduct[i]>hadamardMax)
                 hadamardMax=hadamardProduct[i];
         }
@@ -264,11 +279,12 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     float size = *state->getRawParameterValue(statenames[1]);
     float tail = *state->getRawParameterValue(statenames[2]);
     int delayTimes[reverbChannels];
+    auto bufferSize=buffer.getNumSamples();
+
     for (int i=1;i<=reverbChannels;i++) {
         delayTimes[i-1]=(int)(((samplerate)/(tail*((float)i*2))));
 
     }
-        auto bufferSize=buffer.getNumSamples();
     int delayBufferSize=delayBuffer.getNumSamples();
 
 
@@ -282,7 +298,8 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         generateMixMatrix(delayBuffer,bufferSize,delayBufferSize,delayBufferMag,delayTimes);
 
         for (int i=0;i<(int)reverbChannels;i++){
-            writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,delayTimes[i],gain*hadamardProduct[i]/hadamardMax);//reductionRatio);
+
+            writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,delayTimes[i],gain*(hadamardProduct[i]/hadamardMax));//reductionRatio);
 
         }
 
