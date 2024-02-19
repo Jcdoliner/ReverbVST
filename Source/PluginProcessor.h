@@ -78,8 +78,8 @@ private:
 
 
 
-    float hadamardProduct[reverbChannels]={1,1,1,1,1,1,1,1};
-
+    float hadamardProduct[reverbChannels]={0,0,0,0,0,0,0,0};
+    float hadamardMax=0;
 
     int writePosition {0};
     juce::ScopedPointer<juce::AudioProcessorValueTreeState> state;
