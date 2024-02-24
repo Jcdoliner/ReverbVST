@@ -29,7 +29,6 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
     state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 1.f, nullptr, nullptr);
 
 
-
     state->state = juce::ValueTree(statenames[0]);
     state->state = juce::ValueTree(statenames[1]);
     state->state = juce::ValueTree(statenames[2]);
@@ -109,23 +108,23 @@ void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     reductionRatio=0.25f;
     sizeOfDelayBuffer=sampleRate*2.0;
     delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);
-    for (int i=0 ;i<8;i++){
-        for (int j=0 ;j<8;j++)
-            if (i<4 || j<4) {
-                if (j==i || j==i+4||j==i-4 )
-                    hadamard[i][j] = -1;
-                else
-                    hadamard[i][j]= 1;
-            }
-            else {
-                if (j == i || j == i + 4)
-                    hadamard[i][j] = 1;
-                else
-                    hadamard[i][j] = -1;
-            }
 
-
+    int hadamardOrderFour[4][4]={{1,1,1,1},{1,-1,1,-1},{1,1,-1,-1},{1,-1,-1,1}};
+    int negativeHadamardOrderFour[4][4]={{-1,-1,-1,-1},{-1,1,-1,1},{-1,-1,1,1},{-1,1,1,-1}};
+    for (int quarter=0 ;quarter<4;quarter++){
+    for (int i=0 ;i<4;i++){
+        for (int j=0 ;j<4;j++){
+            if (quarter<2)
+                hadamard[i][j+(quarter*4)]=hadamardOrderFour[i][j];
+            if (quarter==2)
+                hadamard[i+(4)][j]=hadamardOrderFour[i][j];
+            else
+                hadamard[i+(4)][j+(4)]=negativeHadamardOrderFour[i][j];
     }
+
+
+    }}
+
 
 
 
@@ -167,14 +166,14 @@ bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData){
     //Circular Buffer Found From JUCE 15 Audio Programmer Tutorial
     if (delayBufferSize > bufferSize + writePosition){
-        dbuffer.copyFromWithRamp(channel, writePosition,channelData,bufferSize,0.7f,0.7f);
+        dbuffer.copyFromWithRamp(channel, writePosition,channelData,bufferSize,1.f,1.f);
     }
     else
     {
         auto samplesToFillBuffer=delayBufferSize-writePosition;
-        dbuffer.copyFromWithRamp(channel,writePosition,channelData,samplesToFillBuffer,0.7f,0.7f);
+        dbuffer.copyFromWithRamp(channel,writePosition,channelData,samplesToFillBuffer,1.f,1.f);
         auto samplesRemaining=bufferSize-samplesToFillBuffer;
-        dbuffer.copyFromWithRamp(channel,0,channelData+samplesToFillBuffer,samplesRemaining,0.7f,0.7f);
+        dbuffer.copyFromWithRamp(channel,0,channelData+samplesToFillBuffer,samplesRemaining,1.f,1.f);
     }
 }
 
@@ -248,7 +247,7 @@ void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffe
                     relativeMagnitudes[i] =b/delayBufferMag;
             }
             for (int j=0;j< reverbChannels;j++){
-                hadamardProduct[j]+=relativeMagnitudes[i]*(float)hadamard[j][i];
+                hadamardProduct[i]+=relativeMagnitudes[j]*(float)hadamard[j][i];
 
             }
 
