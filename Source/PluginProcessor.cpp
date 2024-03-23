@@ -24,8 +24,8 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 #endif
 {
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
-    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 0.9f, 0.01f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 8.f, 1.f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 1.0f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(0.f, 1.f, 0.1f), 0.f, nullptr, nullptr);
     state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 1.f, nullptr, nullptr);
 
 
@@ -109,6 +109,9 @@ void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     sizeOfDelayBuffer=sampleRate*2.0;
     delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);
 
+
+
+
     int hadamardOrderFour[4][4]={{1,1,1,1},{1,-1,1,-1},{1,1,-1,-1},{1,-1,-1,1}};
     int negativeHadamardOrderFour[4][4]={{-1,-1,-1,-1},{-1,1,-1,1},{-1,-1,1,1},{-1,1,1,-1}};
     for (int quarter=0 ;quarter<4;quarter++){
@@ -177,22 +180,90 @@ void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,i
     }
 }
 
-void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float delayBufferMag,int tail,float gain){
-    auto readPosition=writePosition-tail;
+void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain){
 
-    if (readPosition<0)
-        readPosition+=delayBufferSize;
-    if (readPosition+bufferSize<delayBufferSize)
-        buffer.addFromWithRamp(channel, 0, dBuffer.getReadPointer(channel, (int) readPosition), bufferSize, gain, gain);
-    else
-    {
-    auto samplesToFill=delayBufferSize-readPosition;
-    buffer.addFromWithRamp(channel, 0, dBuffer.getReadPointer(channel, (int) readPosition), (int)samplesToFill, gain, gain);
-    auto bufferRemaining=bufferSize-samplesToFill;
-    buffer.addFromWithRamp(channel, (int)samplesToFill, dBuffer.getReadPointer(channel, 0), (int)bufferRemaining, gain, gain);
+    int numSamples = dst.getNumSamples();
+    float* destChannelData = dst.getWritePointer(channel_dst);
+    const float* sourceChannelData = src.getReadPointer(channel_src);
+    for (int sample = 0; sample < numSamples; ++sample)
+        {
+            if (gain==1){
+                destChannelData[sample] += sourceChannelData[sample];
+            }
+            else if (gain==-1){
+                destChannelData[sample] -= sourceChannelData[sample];
+            }
+            else{
+                destChannelData[sample] +=gain*sourceChannelData[sample];
 
+            }
+        }
     }
 
+
+
+
+
+void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail,float size){
+    virtualBuffer tmpBuff ,tmpBuff2;
+    // this holds the delayed signals
+    std::vector<int> shuffedOrder {0, 1, 2, 3, 4, 5, 6, 7};
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(shuffedOrder.begin(), shuffedOrder.end(), g);
+
+
+    tmpBuff.setSize((reverbChannels),bufferSize);
+    //this holds the result from hadamard matrix solution
+    tmpBuff2.setSize((reverbChannels),bufferSize);
+
+    for (int revChannel=0;revChannel<(int)reverbChannels;revChannel++) {
+        int randomDelay=shuffedOrder[revChannel];
+
+        int time =((int)(samplerate)/(int)((float)(randomDelay+2)*tail));
+        auto readPosition=writePosition-time;
+      // auto readPosition = writePosition - delayTimes[i];
+
+
+        if (readPosition < 0)
+            readPosition += delayBufferSize;
+        if (readPosition + bufferSize < delayBufferSize)
+            tmpBuff.copyFromWithRamp(revChannel, 0, dBuffer.getReadPointer(channel, (int) readPosition), bufferSize, 1,
+                                   1);
+        else {
+            auto samplesToFill = delayBufferSize - readPosition;
+            tmpBuff.copyFromWithRamp(revChannel, 0, dBuffer.getReadPointer(channel, (int) readPosition), (int) samplesToFill,
+                                   1, 1);
+
+            auto bufferRemaining = bufferSize - samplesToFill;
+            tmpBuff.copyFromWithRamp(revChannel, (int) samplesToFill, dBuffer.getReadPointer(channel, 0),
+                                   (int) bufferRemaining, 1, 1);
+
+        }
+    }
+
+    for (int row=0;row<(int)reverbChannels;row++){
+        for (int col=0;col<(int)reverbChannels;col++) {
+            int hadamardGain=hadamard[row][col];
+            if (col==0){
+
+                tmpBuff2.copyFrom(row, 0, tmpBuff.getReadPointer(row, 0),
+                                          bufferSize, hadamardGain);
+            }
+            else{
+                //tmpBuff2.addFrom(row, 0,tmpBuff.getReadPointer(col,0),bufferSize,hadamardGain);
+                mixAudioBuffers(tmpBuff,tmpBuff2,col,row,hadamardGain);
+            }
+        }
+        //outMix.addFromWithRamp(0,0,tmpBuff2.getReadPointer(row,0),bufferSize,1,1);
+        //buffer.addFromWithRamp(channel,0,tmpBuff2.getReadPointer(row,0),bufferSize,gain,gain);
+        mixAudioBuffers(tmpBuff2,buffer,row,channel,gain);
+
+    }
+    //buffer.addFromWithRamp(channel,0,outMix.getReadPointer(0,0),bufferSize,gain,gain);
+    tmpBuff.clear();
+    tmpBuff2.clear();
 }
 float ReverbSEGAudioProcessor::calcInvSqRoot( float n ) {
 //alg from= https://www.tutorialspoint.com/fast-inverse-square-root-in-cplusplus
@@ -228,8 +299,13 @@ void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffe
          [1,-1,-1, 1]     [d]       d= a-b-c+d
 
         */
+        //int timeVars[reverbChannels];
+
         for (int i=0;i< reverbChannels;i++) {
-            auto readPosition=writePosition-delayTimes[i];
+            int time =(int)(((samplerate)/(((float)i*2))));
+            auto readPosition=writePosition-time;
+
+
             if (readPosition<0)
                 readPosition+=delayBufferSize;
             if (readPosition+bufferSize<delayBufferSize)
@@ -280,10 +356,13 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     int delayTimes[reverbChannels];
     auto bufferSize=buffer.getNumSamples();
 
-    for (int i=1;i<=reverbChannels;i++) {
-        delayTimes[i-1]=(int)(((samplerate)/(tail*((float)i*2))));
-
-    }
+//    for (int i=1;i<=reverbChannels;i++) {
+//
+//        //delayLines[i-1].setSize(getTotalNumOutputChannels(),bufferSize);
+//        //outputMix[i-1].setSize(getTotalNumOutputChannels(),bufferSize);
+//        //delayTimes[i-1]=(int)(((samplerate)/(tail*((float)i*2))));
+//
+//    }
     int delayBufferSize=delayBuffer.getNumSamples();
 
 
@@ -292,19 +371,18 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
         float* channelData = buffer.getWritePointer (channel);
         circularBuffer(delayBuffer,channel,bufferSize,delayBufferSize,channelData);
-        float delayBufferMag=delayBuffer.getMagnitude(0,delayBufferSize);
+        //float delayBufferMag=delayBuffer.getMagnitude(0,delayBufferSize);
+
         //updates hadamarard array with new mixin values
-        generateMixMatrix(delayBuffer,bufferSize,delayBufferSize,delayBufferMag,delayTimes);
+        //generateMixMatrix(delayBuffer,bufferSize,delayBufferSize,delayBufferMag,delayTimes);
+        //bufferMatrix delayMatrix{reverbChannels,1,delayLines};
 
-        for (int i=0;i<(int)reverbChannels;i++){
+        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,gain,tail,size);//reductionRatio);
 
-            writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,delayBufferMag,delayTimes[i],gain*(hadamardProduct[i]/hadamardMax));//reductionRatio);
+
+
 
         }
-
-
-
-    }
     writePosition+=bufferSize;
     writePosition%=delayBufferSize;
 }

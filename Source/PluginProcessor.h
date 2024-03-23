@@ -11,7 +11,11 @@
 #define msDelayResponse 40
 #define reverbChannels 8
 #include <JuceHeader.h>
-
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <random>
+#include <vector>
 //==============================================================================
 /**
 */
@@ -35,9 +39,9 @@ public:
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData);
-    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float delayBufferMag,int tail,float gain);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail,float size);
     void generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[]);
-
+    void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain);
 
     //void addDelayToBuffer(juce::AudioBuffer<float>& source,juce::AudioBuffer<float>& dest,int channel);
 
@@ -72,8 +76,12 @@ private:
     double sizeOfDelayBuffer;
 
     using virtualBuffer=juce::AudioBuffer<float>;
+    using bufferMatrix=juce::dsp::Matrix<virtualBuffer>;
 
     virtualBuffer delayBuffer;
+    //virtualBuffer delayLines[reverbChannels];
+    //virtualBuffer outputMix[reverbChannels];
+
 
 
 
