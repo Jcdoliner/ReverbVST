@@ -11,7 +11,7 @@
 #include "math.h"
 
 //==============================================================================
-ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
+ChorusSEGAudioProcessor::ChorusSEGAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -35,17 +35,17 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 
 }
 
-ReverbSEGAudioProcessor::~ReverbSEGAudioProcessor()
+ChorusSEGAudioProcessor::~ChorusSEGAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String ReverbSEGAudioProcessor::getName() const
+const juce::String ChorusSEGAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool ReverbSEGAudioProcessor::acceptsMidi() const
+bool ChorusSEGAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -54,7 +54,7 @@ bool ReverbSEGAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool ReverbSEGAudioProcessor::producesMidi() const
+bool ChorusSEGAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -63,7 +63,7 @@ bool ReverbSEGAudioProcessor::producesMidi() const
    #endif
 }
 
-bool ReverbSEGAudioProcessor::isMidiEffect() const
+bool ChorusSEGAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -72,37 +72,37 @@ bool ReverbSEGAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double ReverbSEGAudioProcessor::getTailLengthSeconds() const
+double ChorusSEGAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int ReverbSEGAudioProcessor::getNumPrograms()
+int ChorusSEGAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int ReverbSEGAudioProcessor::getCurrentProgram()
+int ChorusSEGAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void ReverbSEGAudioProcessor::setCurrentProgram (int index)
+void ChorusSEGAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String ReverbSEGAudioProcessor::getProgramName (int index)
+const juce::String ChorusSEGAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void ReverbSEGAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void ChorusSEGAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void ChorusSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     
     samplerate = sampleRate;
@@ -140,14 +140,14 @@ void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
 }
 
-void ReverbSEGAudioProcessor::releaseResources()
+void ChorusSEGAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool ChorusSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -171,7 +171,7 @@ bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
   #endif
 }
 #endif
-void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData){
+void ChorusSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData){
     //Circular Buffer Found From JUCE 15 Audio Programmer Tutorial
     if (delayBufferSize > bufferSize + writePosition){
         dbuffer.copyFromWithRamp(channel, writePosition,channelData,bufferSize,1.f,1.f);
@@ -185,7 +185,7 @@ void ReverbSEGAudioProcessor::circularBuffer(juce::AudioBuffer<float>& dbuffer,i
     }
 }
 
-void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain){
+void ChorusSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain){
 
     int numSamples = dst.getNumSamples();
     float* destChannelData = dst.getWritePointer(channel_dst);
@@ -206,7 +206,7 @@ void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce
     }
 
 
-void ReverbSEGAudioProcessor::modulateBuffer(juce::AudioBuffer<float>& buffer, int channel){
+void ChorusSEGAudioProcessor::modulateBuffer(juce::AudioBuffer<float>& buffer, int channel){
     //float * buffData=buffer.getWritePointer(channel);
    /* bool enlongate= true;
     for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
@@ -240,7 +240,7 @@ void ReverbSEGAudioProcessor::modulateBuffer(juce::AudioBuffer<float>& buffer, i
 
 
 
-void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail){
+void ChorusSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail){
     virtualBuffer tmpBuff ,tmpBuff2;
     // this holds the delayed signals
     std::vector<int> shuffedOrder {0, 1, 2, 3, 4, 5, 6, 7};
@@ -301,7 +301,7 @@ void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>&
     tmpBuff.clear();
     tmpBuff2.clear();
 }
-float ReverbSEGAudioProcessor::calcInvSqRoot( float n ) {
+float ChorusSEGAudioProcessor::calcInvSqRoot( float n ) {
 //alg from= https://www.tutorialspoint.com/fast-inverse-square-root-in-cplusplus
     const float threehalfs = 1.5f;
     float y = n;
@@ -317,7 +317,7 @@ float ReverbSEGAudioProcessor::calcInvSqRoot( float n ) {
 }
 
 
-void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[])
+void ChorusSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[])
 {
 
     if (delayBufferMag>0.02){       //avoid divide by zero error
@@ -379,7 +379,7 @@ void ReverbSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffe
 
 
 
-void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void ChorusSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -432,27 +432,27 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     writePosition%=delayBufferSize;
 
 }
-juce::AudioProcessorValueTreeState& ReverbSEGAudioProcessor::getState() {
+juce::AudioProcessorValueTreeState& ChorusSEGAudioProcessor::getState() {
     return *state;
 }
 //==============================================================================
-bool ReverbSEGAudioProcessor::hasEditor() const
+bool ChorusSEGAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* ReverbSEGAudioProcessor::createEditor()
+juce::AudioProcessorEditor* ChorusSEGAudioProcessor::createEditor()
 {
-    return new ReverbSEGAudioProcessorEditor (*this);
+    return new ChorusSEGAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void ReverbSEGAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void ChorusSEGAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
 
 }
 
-void ReverbSEGAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void ChorusSEGAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     juce::ValueTree tree = juce::ValueTree::readFromData(data,sizeInBytes);
     if (tree.isValid()) {
@@ -466,5 +466,5 @@ void ReverbSEGAudioProcessor::setStateInformation (const void* data, int sizeInB
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ReverbSEGAudioProcessor();
+    return new ChorusSEGAudioProcessor();
 }

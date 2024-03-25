@@ -17,24 +17,24 @@ using namespace juce;
 //==============================================================================
 /**
 */
-class ReverbSEGAudioProcessorEditor  : public juce::AudioProcessorEditor
+class ChorusSEGAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    ReverbSEGAudioProcessorEditor (ReverbSEGAudioProcessor&);
-    ~ReverbSEGAudioProcessorEditor() override;
-    void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name);
+    ChorusSEGAudioProcessorEditor (ChorusSEGAudioProcessor&);
+    ~ChorusSEGAudioProcessorEditor() override;
+    void ChorusSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name);
 
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    void ReverbSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> State, int order);
+    void ChorusSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> State, int order);
 
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    ReverbSEGAudioProcessor& audioProcessor;
+    ChorusSEGAudioProcessor& audioProcessor;
     
     ScopedPointer<Slider> lengthState, tailState, sizeState;
     ScopedPointer<AudioProcessorValueTreeState::SliderAttachment>lengthAtt, tailAtt, sizeAtt;
@@ -44,5 +44,5 @@ private:
 
     
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReverbSEGAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChorusSEGAudioProcessorEditor)
 };

@@ -10,7 +10,7 @@
 #include "PluginEditor.h"
 using namespace juce;
 //==============================================================================
-ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProcessor& p)
+ChorusSEGAudioProcessorEditor::ChorusSEGAudioProcessorEditor (ChorusSEGAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
 
@@ -52,7 +52,7 @@ ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProc
     // editor's size to whatever you need it to be.
     setSize (300, 200);
 }
-void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name){
+void ChorusSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name){
 
    
     State->Slider::setSliderStyle(Slider::LinearBarVertical);
@@ -61,7 +61,7 @@ void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State
     }
 
 
-void ReverbSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> sliderState,int order) {
+void ChorusSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> sliderState,int order) {
     int xhalf = ((300 / 2));
     int yhalf = (200 / 2);
     int sliderWidth = 50;
@@ -72,12 +72,12 @@ void ReverbSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> sliderStat
             , yhalf + 20);//
      
 }
-ReverbSEGAudioProcessorEditor::~ReverbSEGAudioProcessorEditor()
+ChorusSEGAudioProcessorEditor::~ChorusSEGAudioProcessorEditor()
 {
 }
 
 //==============================================================================
-void ReverbSEGAudioProcessorEditor::paint (juce::Graphics& g)
+void ChorusSEGAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
@@ -87,7 +87,7 @@ void ReverbSEGAudioProcessorEditor::paint (juce::Graphics& g)
     
 }
 
-void ReverbSEGAudioProcessorEditor::resized()
+void ChorusSEGAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
