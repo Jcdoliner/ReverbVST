@@ -36,12 +36,12 @@ public:
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
    #endif
-
+    void modulateBuffer(juce::AudioBuffer<float>& buffer,int channel);
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void circularBuffer(juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float *channelData);
-    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail,float size);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dbuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail);
     void generateMixMatrix(juce::AudioBuffer<float>& dBuffer,int bufferSize,int delayBufferSize,float delayBufferMag,int delayTimes[]);
-    void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain);
+    void mixAudioBuffers(juce::AudioBuffer<float>& src,juce::AudioBuffer<float>& dst,int channel_src,int channel_dst,float gain);
 
     //void addDelayToBuffer(juce::AudioBuffer<float>& source,juce::AudioBuffer<float>& dest,int channel);
 
@@ -79,20 +79,23 @@ private:
     using bufferMatrix=juce::dsp::Matrix<virtualBuffer>;
 
     virtualBuffer delayBuffer;
+
+    
+    using tempBlock=juce::dsp::AudioBlock<float>;
     //virtualBuffer delayLines[reverbChannels];
     //virtualBuffer outputMix[reverbChannels];
 
 
-
-
-
     float hadamardProduct[reverbChannels]={0,0,0,0,0,0,0,0};
     float hadamardMax=0;
+    juce::dsp::Chorus<float> chorusEffect;
 
     int writePosition {0};
     juce::ScopedPointer<juce::AudioProcessorValueTreeState> state;
     const char* paramNames[sliderN] = { "Length","Size","Tail" };
     const char* statenames[sliderN] = { "length","size","tail" };
+
+    juce:: dsp::Oscillator<float> modSig{ [](float x) {return std::sin(x); } };
 
     float reductionRatio;
     int hadamard [reverbChannels][reverbChannels];

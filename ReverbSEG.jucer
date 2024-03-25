@@ -33,7 +33,7 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="ReverbSEG"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="ChorusSEG"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="ReverbSEG"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
