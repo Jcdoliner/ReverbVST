@@ -27,7 +27,7 @@ ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProc
 
 
     addAndMakeVisible(lengthTxt = new Label("lenghtTxt"));
-    lengthTxt->Label::setText("Length", dontSendNotification);
+    lengthTxt->Label::setText("Mix", dontSendNotification);
     lengthTxt->Label::attachToComponent(lengthState, false);
 
     addAndMakeVisible(sizeTxt = new Label("sizeTxt"));

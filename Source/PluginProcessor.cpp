@@ -24,9 +24,9 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 #endif
 {
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
-    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 1.0f, 0.01f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(0.f, 1.f, 0.1f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 1.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.f, 1.0f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(10.f, 16.f, 1.f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(0.2f, 1.0f, 0.1f), 0.2f, nullptr, nullptr);
 
 
     state->state = juce::ValueTree(statenames[0]);
@@ -207,7 +207,7 @@ void ReverbSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce
 void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,juce::AudioBuffer<float>& dBuffer,int channel,int bufferSize,int delayBufferSize,float gain,float tail,float size){
     virtualBuffer tmpBuff ,tmpBuff2;
     // this holds the delayed signals
-    std::vector<int> shuffedOrder {0, 1, 2, 3, 4, 5, 6, 7};
+    std::vector<int> shuffedOrder {4,8,16,32,64,128,200,500};
     std::random_device rd;
     std::mt19937 g(rd());
 
@@ -219,10 +219,10 @@ void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>&
     tmpBuff2.setSize((reverbChannels),bufferSize);
 
     for (int revChannel=0;revChannel<(int)reverbChannels;revChannel++) {
-        int randomDelay=shuffedOrder[revChannel];
-
-        int time =((int)(samplerate)/(int)((float)(randomDelay+2)*tail));
-        auto readPosition=writePosition-time;
+        int randomDelay = shuffedOrder[revChannel];;
+        int time =((int)(samplerate)/(int)((float)(randomDelay/tail)));
+        time=time +(samplerate/((size+6)));
+        auto readPosition=writePosition-(time);
       // auto readPosition = writePosition - delayTimes[i];
 
 
@@ -261,6 +261,7 @@ void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>&
         mixAudioBuffers(tmpBuff2,buffer,row,channel,gain);
 
     }
+
     //buffer.addFromWithRamp(channel,0,outMix.getReadPointer(0,0),bufferSize,gain,gain);
     tmpBuff.clear();
     tmpBuff2.clear();
@@ -364,7 +365,8 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 //
 //    }
     int delayBufferSize=delayBuffer.getNumSamples();
-
+    virtualBuffer vbuff;
+    vbuff.setSize(getTotalNumOutputChannels(), bufferSize);
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -376,12 +378,12 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         //updates hadamarard array with new mixin values
         //generateMixMatrix(delayBuffer,bufferSize,delayBufferSize,delayBufferMag,delayTimes);
         //bufferMatrix delayMatrix{reverbChannels,1,delayLines};
+ 
+        for (int rchannel = 1; rchannel <= size; ++rchannel) {
+            //float adaptedGain=gain/(rchannel) ;
+            writeDelayToOutputBuffer(buffer, delayBuffer, channel, bufferSize, delayBufferSize, gain/size, tail, rchannel);//reductionRatio);
 
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,gain,tail,size);//reductionRatio);
-
-
-
-
+        }
         }
     writePosition+=bufferSize;
     writePosition%=delayBufferSize;
