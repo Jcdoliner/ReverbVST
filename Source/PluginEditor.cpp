@@ -30,6 +30,7 @@ ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProc
     lengthTxt->Label::setText("Mix", dontSendNotification);
     lengthTxt->Label::attachToComponent(lengthState, false);
 
+
     addAndMakeVisible(sizeTxt = new Label("sizeTxt"));
     sizeTxt->Label::setText("Size", dontSendNotification);
     sizeTxt->Label::attachToComponent(sizeState, false);
@@ -50,7 +51,7 @@ ReverbSEGAudioProcessorEditor::ReverbSEGAudioProcessorEditor (ReverbSEGAudioProc
      
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300, 200);
+    setSize (700, 400);
 }
 void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name){
 
@@ -62,14 +63,14 @@ void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State
 
 
 void ReverbSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> sliderState,int order) {
-    int xhalf = ((300 / 2));
-    int yhalf = (200 / 2);
-    int sliderWidth = 50;
-    sliderState->setBounds(
-            (xhalf - 100) + (order * 100)
-            , yhalf -70
-            , sliderWidth
-            , yhalf + 20);//
+    //int xhalf = ((300 / 2));
+    //int yhalf = (200 / 2);
+    //int sliderWidth = 50;
+    //sliderState->setBounds(
+    //        (xhalf - 100) + (order * 100)
+    //        , yhalf -70
+    //        , sliderWidth
+    //        , yhalf + 20);//
      
 }
 ReverbSEGAudioProcessorEditor::~ReverbSEGAudioProcessorEditor()
@@ -89,25 +90,17 @@ void ReverbSEGAudioProcessorEditor::paint (juce::Graphics& g)
 
 void ReverbSEGAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
+    //12x12 Grid
+    int xunit = (getWidth() / 12);
+    int yunit = (getHeight() / 12);
+    int xcenter = xunit * 6;
+    int ycenter = xunit * 6;
+    int sliderWidth = xunit * 2;
+    int sliderHeight = yunit * 10;
 
-    int xhalf = ((300 / 2)-125);
-    int yhalf = (200 / 2);
-    int sliderWidth = 50;
-    lengthState->setBounds((xhalf)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
-
-    sizeState->setBounds((xhalf ) + ( 100)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
-    tailState->setBounds((xhalf) + ( 200)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
+    lengthState->setBounds(2 * xunit, yunit, sliderWidth, sliderHeight);
+    sizeState->setBounds(xcenter - (xunit), yunit, sliderWidth, sliderHeight);
+    tailState->setBounds(xcenter + (2 * xunit), yunit, sliderWidth, sliderHeight);
 
 }
 
