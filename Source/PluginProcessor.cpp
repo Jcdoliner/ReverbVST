@@ -24,9 +24,9 @@ ChorusSEGAudioProcessor::ChorusSEGAudioProcessor()
 #endif
 {
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
-    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.01f, 1.0f, 0.01f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(5.f, 90.f, 1.0f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 2.0f, 0.1f), 1.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0, 0.95f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(0.01f, 1.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.f, nullptr, nullptr);
 
 
     state->state = juce::ValueTree(statenames[0]);
@@ -109,7 +109,6 @@ void ChorusSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     reductionRatio=0.25f;
     sizeOfDelayBuffer=sampleRate*2.0;
     delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);   
-    //audio programmer part 0 oscillator
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
@@ -207,24 +206,6 @@ void ChorusSEGAudioProcessor::mixAudioBuffers(juce::AudioBuffer<float>& src,juce
 
 
 void ChorusSEGAudioProcessor::modulateBuffer(juce::AudioBuffer<float>& buffer, int channel){
-    //float * buffData=buffer.getWritePointer(channel);
-   /* bool enlongate= true;
-    for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
-        float tune=0.1;
-        int idx = int(sample * tune);
-        float currentSample=buffer.getSample(channel, idx);
-
-
-        buffData++;
-    }*/
-    //chorusEffect.setFeedback(0.5);
-    //chorusEffect.setRate(100);
-    //chorusEffect.setDepth(0.5);
-    //tempBlock audioBlock = tempBlock(buffer);
-    //juce::dsp::ProcessContextReplacing context = juce::dsp::ProcessContextReplacing(audioBlock);
-    //chorusEffect.process(context);
-    ////float modSample= modSig.processSample(currentSample);
-    ////*buffData = modSample;
 
     tempBlock audioBlock = tempBlock(buffer);
     juce::dsp::ProcessContextReplacing context = juce::dsp::ProcessContextReplacing(audioBlock);
@@ -379,10 +360,10 @@ void ChorusSEGAudioProcessor::generateMixMatrix(juce::AudioBuffer<float>& dBuffe
 
 
 
-void ChorusSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void ChorusSEGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
@@ -393,41 +374,32 @@ void ChorusSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
 
     float gain = *state->getRawParameterValue(statenames[0]);
-    float freq= *state->getRawParameterValue(statenames[1]);
+    float freq = *state->getRawParameterValue(statenames[1]);
     float tail = *state->getRawParameterValue(statenames[2]);
     int delayTimes[reverbChannels];
-    auto bufferSize=buffer.getNumSamples();
-    int delayBufferSize=delayBuffer.getNumSamples();
-    
+    auto bufferSize = buffer.getNumSamples();
+    int delayBufferSize = delayBuffer.getNumSamples();
+
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
 
         float* channelData = buffer.getWritePointer(channel);
-
-    /*    for (int sample = 0; sample< bufferSize; ++sample) {
-           
-            *channelData =audioBlock.getSample(channel, sample);
-            channelData++;
-        }*/
-         
-         
-        
-        circularBuffer(delayBuffer, channel, bufferSize, delayBufferSize, channelData);
-        writeDelayToOutputBuffer(buffer,delayBuffer,channel,bufferSize,delayBufferSize,gain,tail);
- 
+        //circularBuffer(delayBuffer, channel, bufferSize, delayBufferSize, channelData);
+        //writeDelayToOutputBuffer(buffer, delayBuffer, channel, bufferSize, delayBufferSize, gain, tail);
 
 
-        }
-    tempBlock audioBlock = tempBlock(buffer);
-    juce::dsp::ProcessContextReplacing context = juce::dsp::ProcessContextReplacing(audioBlock);
-    chorusEffect.setFeedback(0.5);
-    chorusEffect.setRate(freq);
-    chorusEffect.setDepth(0.2);
-    chorusEffect.setMix(0.5);
-    chorusEffect.setCentreDelay(5);
-    chorusEffect.process(context);
 
+    }
+        tempBlock audioBlock = tempBlock(buffer);
+        juce::dsp::ProcessContextReplacing context = juce::dsp::ProcessContextReplacing(audioBlock);
+        chorusEffect.setFeedback(0);
+        chorusEffect.setRate(freq);
+        chorusEffect.setDepth(1);
+        chorusEffect.setMix(gain);
+        chorusEffect.setCentreDelay(tail);
+        chorusEffect.process(context);
+     
     writePosition+=bufferSize;
     writePosition%=delayBufferSize;
 

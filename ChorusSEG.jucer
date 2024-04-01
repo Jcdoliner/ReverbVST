@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="CYv8km" name="ReverbSEG" projectType="audioplug" useAppConfig="0"
+<JUCERPROJECT id="CYv8km" name="ChorusSEG" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
-  <MAINGROUP id="fbAczU" name="ReverbSEG">
+  <MAINGROUP id="fbAczU" name="ChorusSEG">
     <GROUP id="{D5465FD4-D060-D15A-2F19-F52A6A12DA4C}" name="Source">
       <FILE id="AvQEmv" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>

@@ -27,15 +27,15 @@ ChorusSEGAudioProcessorEditor::ChorusSEGAudioProcessorEditor (ChorusSEGAudioProc
 
 
     addAndMakeVisible(lengthTxt = new Label("lenghtTxt"));
-    lengthTxt->Label::setText("Length", dontSendNotification);
+    lengthTxt->Label::setText("Gain", dontSendNotification);
     lengthTxt->Label::attachToComponent(lengthState, false);
 
     addAndMakeVisible(sizeTxt = new Label("sizeTxt"));
-    sizeTxt->Label::setText("Size", dontSendNotification);
+    sizeTxt->Label::setText("Frequency", dontSendNotification);
     sizeTxt->Label::attachToComponent(sizeState, false);
 
     addAndMakeVisible(tailTxt = new Label("tailTxt"));
-    tailTxt->Label::setText("Tail", dontSendNotification);
+    tailTxt->Label::setText("Delay", dontSendNotification);
     tailTxt->Label::attachToComponent(tailState, false);
 
     lengthAtt = new AudioProcessorValueTreeState::SliderAttachment(p.getState(), "length", *lengthState);
@@ -50,7 +50,7 @@ ChorusSEGAudioProcessorEditor::ChorusSEGAudioProcessorEditor (ChorusSEGAudioProc
      
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300, 200);
+    setSize (700, 400);
 }
 void ChorusSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name){
 
@@ -89,25 +89,17 @@ void ChorusSEGAudioProcessorEditor::paint (juce::Graphics& g)
 
 void ChorusSEGAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
 
-    int xhalf = ((300 / 2)-125);
-    int yhalf = (200 / 2);
-    int sliderWidth = 50;
-    lengthState->setBounds((xhalf)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
+    int xunit = (getWidth() / 12);
+    int yunit = (getHeight() / 12);
+    int xcenter = xunit * 6;
+    int ycenter = xunit * 6;
+    int sliderWidth = xunit * 2;
+    int sliderHeight = yunit * 10;
 
-    sizeState->setBounds((xhalf ) + ( 100)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
-    tailState->setBounds((xhalf) + ( 200)
-        , yhalf-60
-        , sliderWidth
-        , yhalf + 30);
+    lengthState->setBounds(2 * xunit, yunit, sliderWidth, sliderHeight);
+    sizeState->setBounds(xcenter - (xunit), yunit, sliderWidth, sliderHeight);
+    tailState->setBounds(xcenter + (2 * xunit), yunit, sliderWidth, sliderHeight);
 
 }
 
