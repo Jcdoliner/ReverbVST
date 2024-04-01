@@ -17,24 +17,24 @@ using namespace juce;
 //==============================================================================
 /**
 */
-class ReverbSEGAudioProcessorEditor  : public juce::AudioProcessorEditor
+class DelaySEGAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    ReverbSEGAudioProcessorEditor (ReverbSEGAudioProcessor&);
-    ~ReverbSEGAudioProcessorEditor() override;
-    void ReverbSEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name);
+    DelaySEGAudioProcessorEditor (DelaySEGAudioProcessor&);
+    ~DelaySEGAudioProcessorEditor() override;
+    void DelaySEGAudioProcessorEditor::makeStateVisible(ScopedPointer<Slider> State, String name);
 
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    void ReverbSEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> State, int order);
+    void DelaySEGAudioProcessorEditor::sliderStyle(ScopedPointer<Slider> State, int order);
 
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    ReverbSEGAudioProcessor& audioProcessor;
+    DelaySEGAudioProcessor& audioProcessor;
     
     ScopedPointer<Slider> lengthState, tailState, sizeState;
     ScopedPointer<AudioProcessorValueTreeState::SliderAttachment>lengthAtt, tailAtt, sizeAtt;
@@ -44,5 +44,5 @@ private:
 
     
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReverbSEGAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelaySEGAudioProcessorEditor)
 };

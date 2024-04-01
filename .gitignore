@@ -2,3 +2,5 @@
 **/JuceLibraryCode
 **/.DS_Store
 **/Source/cmake-build-debug
+/.idea
+/Source/cmake-build-debug-visual-studio

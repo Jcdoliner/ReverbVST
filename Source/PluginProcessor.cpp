@@ -11,7 +11,7 @@
 #include "math.h"
 
 //==============================================================================
-ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
+DelaySEGAudioProcessor::DelaySEGAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -25,7 +25,7 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 {
     state = new juce::AudioProcessorValueTreeState(*this, nullptr);
     state->createAndAddParameter(statenames[0], paramNames[0], paramNames[0], juce::NormalisableRange<float>(0.0f, 0.9f, 0.01f), 0.f, nullptr, nullptr);
-    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 150.f, 0.01f), 0.f, nullptr, nullptr);
+    state->createAndAddParameter(statenames[1], paramNames[1], paramNames[1], juce::NormalisableRange<float>(1.f, 5.f, 1.f), 1.f, nullptr, nullptr);
     state->createAndAddParameter(statenames[2], paramNames[2], paramNames[2], juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 0.f, nullptr, nullptr);
 
 
@@ -36,17 +36,17 @@ ReverbSEGAudioProcessor::ReverbSEGAudioProcessor()
 
 }
 
-ReverbSEGAudioProcessor::~ReverbSEGAudioProcessor()
+DelaySEGAudioProcessor::~DelaySEGAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String ReverbSEGAudioProcessor::getName() const
+const juce::String DelaySEGAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool ReverbSEGAudioProcessor::acceptsMidi() const
+bool DelaySEGAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -55,7 +55,7 @@ bool ReverbSEGAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool ReverbSEGAudioProcessor::producesMidi() const
+bool DelaySEGAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -64,7 +64,7 @@ bool ReverbSEGAudioProcessor::producesMidi() const
    #endif
 }
 
-bool ReverbSEGAudioProcessor::isMidiEffect() const
+bool DelaySEGAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -73,37 +73,37 @@ bool ReverbSEGAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double ReverbSEGAudioProcessor::getTailLengthSeconds() const
+double DelaySEGAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int ReverbSEGAudioProcessor::getNumPrograms()
+int DelaySEGAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int ReverbSEGAudioProcessor::getCurrentProgram()
+int DelaySEGAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void ReverbSEGAudioProcessor::setCurrentProgram (int index)
+void DelaySEGAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String ReverbSEGAudioProcessor::getProgramName (int index)
+const juce::String DelaySEGAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void ReverbSEGAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void DelaySEGAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void DelaySEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     samplerate = sampleRate;
 
@@ -111,14 +111,14 @@ void ReverbSEGAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     delayBuffer.setSize(getTotalNumOutputChannels(),(int)sizeOfDelayBuffer);
 }
 
-void ReverbSEGAudioProcessor::releaseResources()
+void DelaySEGAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool DelaySEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -143,8 +143,8 @@ bool ReverbSEGAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
-void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain){
-    auto readPosition=writePosition-(samplerate/(int)tail);
+void DelaySEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain){
+    auto readPosition=writePosition-tail;
     if (readPosition<0)
         readPosition+=delayBufferSize;
     if (readPosition+n<delayBufferSize)
@@ -160,7 +160,7 @@ void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>&
 
 }
 
-void ReverbSEGAudioProcessor::circularBuffer(int channel,int n,int delayBufferSize,float *channelData){
+void DelaySEGAudioProcessor::circularBuffer(int channel,int n,int delayBufferSize,float *channelData){
     //Circular Buffer Found From JUCE 15 Audio Programmer Tutorial
     if (delayBufferSize > n + writePosition){
         delayBuffer.copyFromWithRamp(channel, writePosition,channelData,n,1.0f,1.0f);
@@ -175,7 +175,7 @@ void ReverbSEGAudioProcessor::circularBuffer(int channel,int n,int delayBufferSi
 }
 
 
-void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void DelaySEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -187,9 +187,9 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
          maxVal=buffer.getMagnitude(i,0,buffer.getNumSamples());
     }
     auto n=buffer.getNumSamples();
-    float length = *state->getRawParameterValue(statenames[0]);
-    float size = *state->getRawParameterValue(statenames[1]);
-    float tail = *state->getRawParameterValue(statenames[2]);
+    float mix = *state->getRawParameterValue(statenames[0]);
+    float taps = *state->getRawParameterValue(statenames[1]);
+    float time = *state->getRawParameterValue(statenames[2]);
 
     int delayBufferSize=delayBuffer.getNumSamples();
 
@@ -200,7 +200,10 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     {
         float* channelData = buffer.getWritePointer (channel);
         circularBuffer(channel,n,delayBufferSize,channelData);
-        writeDelayToOutputBuffer(buffer,channel,n,delayBufferSize,tail,length);
+        for (int i = 0; i < taps; i++) {
+            float tapTime = (samplerate /((int)(11-time)+((i)/2)));
+            writeDelayToOutputBuffer(buffer, channel, n, delayBufferSize, tapTime, mix);
+        }
 //        auto readPosition=writePosition-(samplerate/(int)tail);
 //        if (readPosition<0)
 //            readPosition+=delayBufferSize;
@@ -221,27 +224,27 @@ void ReverbSEGAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     writePosition+=n;
     writePosition%=delayBufferSize;
 }
-juce::AudioProcessorValueTreeState& ReverbSEGAudioProcessor::getState() {
+juce::AudioProcessorValueTreeState& DelaySEGAudioProcessor::getState() {
     return *state;
 }
 //==============================================================================
-bool ReverbSEGAudioProcessor::hasEditor() const
+bool DelaySEGAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* ReverbSEGAudioProcessor::createEditor()
+juce::AudioProcessorEditor* DelaySEGAudioProcessor::createEditor()
 {
-    return new ReverbSEGAudioProcessorEditor (*this);
+    return new DelaySEGAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void ReverbSEGAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void DelaySEGAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
 
 }
 
-void ReverbSEGAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void DelaySEGAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     juce::ValueTree tree = juce::ValueTree::readFromData(data,sizeInBytes);
     if (tree.isValid()) {
@@ -255,5 +258,5 @@ void ReverbSEGAudioProcessor::setStateInformation (const void* data, int sizeInB
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ReverbSEGAudioProcessor();
+    return new DelaySEGAudioProcessor();
 }

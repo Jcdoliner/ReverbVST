@@ -13,15 +13,15 @@
 //==============================================================================
 /**
 */
-class ReverbSEGAudioProcessor  : public juce::AudioProcessor
+class DelaySEGAudioProcessor  : public juce::AudioProcessor
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
 {
 public:
     //==============================================================================
-    ReverbSEGAudioProcessor();
-    ~ReverbSEGAudioProcessor() override;
+    DelaySEGAudioProcessor();
+    ~DelaySEGAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -34,7 +34,7 @@ public:
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void circularBuffer(int channel,int n,int delayBufferSize,float *channelData);
 
-    void ReverbSEGAudioProcessor::writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain);
+    void writeDelayToOutputBuffer(juce::AudioBuffer<float>& buffer,int channel,int n,int delayBufferSize,float tail,float gain);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -96,5 +96,5 @@ private:
     //};
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReverbSEGAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelaySEGAudioProcessor)
 };
