@@ -8,3 +8,5 @@ An in depth description on the algorithms used can be found in the following Rep
 [Senior_Design_Final_Report_Jose_Chris.pdf](https://github.com/Jcdoliner/ReverbVST/files/15098241/Senior_Design_Final_Report_Jose_Chris.2.pdf)
 
 Note that although the effects work Windows, the effects were designed to work in the Raspberry Pi's OS (Raspbian). 
+
+The project also uses the code from the following repository to create the distortion effect: [SEG Distortion](https://github.com/Jcdoliner/SEG-Distortion-Effect)
